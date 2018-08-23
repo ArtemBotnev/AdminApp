@@ -1,0 +1,1 @@
+## Example of admin app Android

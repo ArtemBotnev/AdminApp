@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">AdminApp</string>
+
+    <string name="this_admin_app">This is admin app!</string>
+
+    <string name="device_admin">Device admin</string>
+
+    <string name="app_enable">You\'ve enabled admin permissions for this app</string>
+    <string name="app_disable">You\'ve disabled admin permissions for this app</string>
+
+    <string name="enable_admin">Admin permission for this app</string>
+</resources>
