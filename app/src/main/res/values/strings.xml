@@ -9,4 +9,15 @@
     <string name="app_disable">You\'ve disabled admin permissions for this app</string>
 
     <string name="explanation">It\'s necessary to have ability disable device camera</string>
+
+    <string name="create_password">Create password</string>
+    <string name="enter_password">Enter password</string>
+    <string name="password">Password</string>
+    <string name="confirm">Confirm password</string>
+    <string name="short_password">Too short password</string>
+    <string name="password_space">Password must not contains space</string>
+    <string name="password_confirm_mismatch">Fields mismatch, check you input</string>
+    <string name="password_set">Password has set successful</string>
+    <string name="wrong_password">Wrong password</string>
+
 </resources>

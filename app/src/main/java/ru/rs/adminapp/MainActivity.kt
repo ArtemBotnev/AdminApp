@@ -7,15 +7,19 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.preference.PreferenceManager
 import android.support.v7.app.AppCompatActivity
 import android.view.View
 import android.widget.Switch
 
 import kotlinx.android.synthetic.main.activity_main.*
 
-class MainActivity : AppCompatActivity() {
+/**
+ * Created by Artem Botnev on 08/23/2018
+ */
+class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
     companion object {
-        const val TAG = "MainActivity"
+        private const val TAG = "MainActivity"
 
         fun launch(context: Context) =
                 Intent(context, MainActivity::class.java).also { context.startActivity(it) }
@@ -23,7 +27,6 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var devicePolicyManager: DevicePolicyManager
     private lateinit var adminComponentName: ComponentName
-    private var isAdminActive = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,11 +34,17 @@ class MainActivity : AppCompatActivity() {
 
         devicePolicyManager = getSystemService(Activity.DEVICE_POLICY_SERVICE) as DevicePolicyManager
         adminComponentName = AdminReceiver.getComponentName(this)
-        isAdminActive = devicePolicyManager.isAdminActive(adminComponentName)
 
         adjustLayout()
 
+        val isAdminActive = devicePolicyManager.isAdminActive(adminComponentName)
         if (savedInstanceState == null && !isAdminActive) askAdminRight()
+    }
+
+    override fun doChange(enable: Boolean) {
+        devicePolicyManager.setCameraDisabled(adminComponentName, !enable)
+        cameraImage.setImageResource(
+                if (enable) R.drawable.ic_cam_enable else R.drawable.ic_cam_disable)
     }
 
     /**
@@ -43,10 +52,12 @@ class MainActivity : AppCompatActivity() {
      */
     fun changeCameraStatus(view: View) {
         val switch = view as Switch
-        devicePolicyManager.setCameraDisabled(adminComponentName, !switch.isChecked)
 
-        cameraImage.setImageResource(
-                if (switch.isChecked) R.drawable.ic_cam_enable else R.drawable.ic_cam_disable)
+        checkPassword(switch.isChecked)
+
+//        devicePolicyManager.setCameraDisabled(adminComponentName, !switch.isChecked)
+//        cameraImage.setImageResource(
+//                if (switch.isChecked) R.drawable.ic_cam_enable else R.drawable.ic_cam_disable)
     }
 
     private fun adjustLayout() {
@@ -66,5 +77,16 @@ class MainActivity : AppCompatActivity() {
         }.also { startActivity(it) }
 
         finish()
+    }
+
+    private fun checkPassword(attemptEnable: Boolean) {
+        val sharedPreference = PreferenceManager.getDefaultSharedPreferences(this)
+        val password = sharedPreference.getString(PASSWORD, PASSWORD_DEFAULT_VAL)
+
+        // create dialog for setting password if password hasn't establish yet
+        val dialog = PasswordDialog(this, attemptEnable)
+                .showPasswordDialog(password == PASSWORD_DEFAULT_VAL)
+
+        dialog.show()
     }
 }
