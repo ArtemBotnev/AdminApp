@@ -65,7 +65,7 @@ class PasswordDialog(private val context: Context, private val attemptEnable: Bo
             showLongToast(context, R.string.password_set_success)
             PreferenceManager.getDefaultSharedPreferences(context)
                     .edit()
-                    .putString(PASSWORD, passwordView.text.toString())
+                    .putString(PASSWORD, get256Sha(passwordView.text.toString()))
                     .apply()
 
             resolvable.doChange(attemptEnable)
@@ -76,8 +76,9 @@ class PasswordDialog(private val context: Context, private val attemptEnable: Bo
     private fun checkPassword(dialog: DialogInterface) {
         val password = PreferenceManager.getDefaultSharedPreferences(context)
                 .getString(PASSWORD, PASSWORD_DEFAULT_VAL)
+        val inputPasswordSha = get256Sha(passwordView.text.toString())
 
-        if (password == PASSWORD_DEFAULT_VAL || passwordView.text.toString() != password) {
+        if (passwordView.text.toString() == PASSWORD_DEFAULT_VAL || inputPasswordSha != password) {
             showLongToast(context, R.string.wrong_password)
         } else {
             resolvable.doChange(attemptEnable)
