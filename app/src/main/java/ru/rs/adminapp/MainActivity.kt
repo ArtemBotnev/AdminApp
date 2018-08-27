@@ -42,9 +42,11 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
     }
 
     override fun doChange(enable: Boolean) {
-        devicePolicyManager.setCameraDisabled(adminComponentName, !enable)
+        cameraSwitch.isChecked = enable
         cameraImage.setImageResource(
                 if (enable) R.drawable.ic_cam_enable else R.drawable.ic_cam_disable)
+
+        devicePolicyManager.setCameraDisabled(adminComponentName, !enable)
     }
 
     /**
@@ -52,12 +54,10 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
      */
     fun changeCameraStatus(view: View) {
         val switch = view as Switch
+        val cameraEnable = switch.isChecked
+        switch.isChecked = !cameraEnable
 
-        checkPassword(switch.isChecked)
-
-//        devicePolicyManager.setCameraDisabled(adminComponentName, !switch.isChecked)
-//        cameraImage.setImageResource(
-//                if (switch.isChecked) R.drawable.ic_cam_enable else R.drawable.ic_cam_disable)
+        checkPassword(cameraEnable)
     }
 
     private fun adjustLayout() {
@@ -84,9 +84,8 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
         val password = sharedPreference.getString(PASSWORD, PASSWORD_DEFAULT_VAL)
 
         // create dialog for setting password if password hasn't establish yet
-        val dialog = PasswordDialog(this, attemptEnable)
+        PasswordDialog(this, attemptEnable)
                 .showPasswordDialog(password == PASSWORD_DEFAULT_VAL)
-
-        dialog.show()
+                .show()
     }
 }

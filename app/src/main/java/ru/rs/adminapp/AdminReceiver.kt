@@ -19,7 +19,7 @@ class AdminReceiver : DeviceAdminReceiver() {
 
     override fun onEnabled(context: Context?, intent: Intent?) {
         Log.i(TAG, "Enabled")
-        showShortToast(context!!, R.string.app_enable)
+        showLongToast(context!!, R.string.app_enable)
 
         MainActivity.launch(context)
 
@@ -28,7 +28,7 @@ class AdminReceiver : DeviceAdminReceiver() {
 
     override fun onDisabled(context: Context?, intent: Intent?) {
         Log.i(TAG, "Disabled")
-        showShortToast(context!!, R.string.app_enable)
+        showLongToast(context!!, R.string.app_enable)
         super.onDisabled(context, intent)
     }
 }

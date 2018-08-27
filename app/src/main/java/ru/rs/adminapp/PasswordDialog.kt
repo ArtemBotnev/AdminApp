@@ -33,27 +33,36 @@ class PasswordDialog(private val context: Context, private val attemptEnable: Bo
 
         if (!isRegistration) confirmView.visibility = View.GONE
 
-        return AlertDialog.Builder(context)
+        val passwordDialog = AlertDialog.Builder(context)
                 .setTitle(if (isRegistration) R.string.create_password else R.string.enter_password)
                 .setView(root)
-                .setPositiveButton(android.R.string.ok)
-                { dialog, which ->  if (isRegistration) setPassword(dialog) else checkPassword(dialog) }
-                .setNegativeButton(android.R.string.cancel)
-                { dialog, which ->  dialog.dismiss() }
+                .setPositiveButton(android.R.string.ok, null)
+                .setNegativeButton(android.R.string.cancel, null)
                 .create()
+
+        passwordDialog.setOnShowListener { dialog ->
+            val button = (dialog as AlertDialog).getButton(AlertDialog.BUTTON_POSITIVE)
+
+            button.setOnClickListener {
+                if (isRegistration) setPassword(dialog) else checkPassword(dialog)
+            }
+        }
+
+        return passwordDialog
     }
 
     private fun setPassword(dialog: DialogInterface) {
         if (passwordView.text.length < MIN_PASSWORD_LENGTH) {
-            showShortToast(context, R.string.short_password)
+            showLongToast(context, R.string.short_password)
             return
         } else if (passwordView.text.contains(" ")) {
-            showShortToast(context, R.string.password_space)
+            showLongToast(context, R.string.password_space)
             return
-        } else if (passwordView.text != confirmView.text) {
-            showShortToast(context, R.string.password_confirm_mismatch)
+        } else if (passwordView.text.toString() != confirmView.text.toString()) {
+            showLongToast(context, R.string.password_confirm_mismatch)
             return
         } else {
+            showLongToast(context, R.string.password_set_success)
             PreferenceManager.getDefaultSharedPreferences(context)
                     .edit()
                     .putString(PASSWORD, passwordView.text.toString())
@@ -69,7 +78,7 @@ class PasswordDialog(private val context: Context, private val attemptEnable: Bo
                 .getString(PASSWORD, PASSWORD_DEFAULT_VAL)
 
         if (password == PASSWORD_DEFAULT_VAL || passwordView.text.toString() != password) {
-            showShortToast(context, R.string.password_confirm_mismatch)
+            showLongToast(context, R.string.wrong_password)
         } else {
             resolvable.doChange(attemptEnable)
             dialog.dismiss()
@@ -80,6 +89,11 @@ class PasswordDialog(private val context: Context, private val attemptEnable: Bo
      * Allows change smth protected by password
      */
     internal interface Resolvable {
+        /**
+         * change smth if password is right
+         *
+         * @param enable - action is enabling or disabling
+         */
         fun doChange(enable: Boolean)
     }
 }

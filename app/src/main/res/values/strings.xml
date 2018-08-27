@@ -17,7 +17,7 @@
     <string name="short_password">Too short password</string>
     <string name="password_space">Password must not contains space</string>
     <string name="password_confirm_mismatch">Fields mismatch, check you input</string>
-    <string name="password_set">Password has set successful</string>
+    <string name="password_set_success">Password has set successful</string>
     <string name="wrong_password">Wrong password</string>
 
 </resources>

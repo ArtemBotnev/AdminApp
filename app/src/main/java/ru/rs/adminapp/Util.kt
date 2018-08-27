@@ -11,5 +11,5 @@ import android.widget.Toast
 const val PASSWORD = "password_shed"
 const val PASSWORD_DEFAULT_VAL = ""
 
-fun showShortToast(context: Context, sourceId: Int) =
-        Toast.makeText(context, sourceId, Toast.LENGTH_SHORT).show()
+fun showLongToast(context: Context, sourceId: Int) =
+        Toast.makeText(context, sourceId, Toast.LENGTH_LONG).show()
