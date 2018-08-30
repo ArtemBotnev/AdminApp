@@ -9,10 +9,8 @@ import android.content.Intent
 import android.os.Bundle
 import android.preference.PreferenceManager
 import android.support.v7.app.AppCompatActivity
-import android.view.View
-import android.widget.Switch
-
-import kotlinx.android.synthetic.main.activity_main.*
+import android.view.Menu
+import android.view.MenuItem
 
 /**
  * Created by Artem Botnev on 08/23/2018
@@ -22,11 +20,15 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
         private const val TAG = "MainActivity"
 
         fun launch(context: Context) =
-                Intent(context, MainActivity::class.java).also { context.startActivity(it) }
+                Intent(context, MainActivity::class.java)
+                        .apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
+                        .also { context.startActivity(it) }
     }
 
     private lateinit var devicePolicyManager: DevicePolicyManager
     private lateinit var adminComponentName: ComponentName
+
+    private lateinit var cameraButton: MenuItem
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,39 +37,43 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
         devicePolicyManager = getSystemService(Activity.DEVICE_POLICY_SERVICE) as DevicePolicyManager
         adminComponentName = AdminReceiver.getComponentName(this)
 
-        adjustLayout()
-
         val isAdminActive = devicePolicyManager.isAdminActive(adminComponentName)
         if (savedInstanceState == null && !isAdminActive) askAdminRight()
     }
 
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_main, menu)
+        cameraButton = menu.getItem(0)
+
+        cameraButton.setIcon(
+                if (isCameraDisabled(this)) R.drawable.ic_cam_disable
+                else R.drawable.ic_cam_enable)
+
+        return super.onCreateOptionsMenu(menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return if (item.itemId == R.id.camera_button) {
+            changeCameraStatus()
+            true
+        } else {
+            super.onOptionsItemSelected(item)
+        }
+    }
+
     override fun doChange(enable: Boolean) {
-        cameraSwitch.isChecked = enable
-        cameraImage.setImageResource(
+        cameraButton.setIcon(
                 if (enable) R.drawable.ic_cam_enable else R.drawable.ic_cam_disable)
 
         devicePolicyManager.setCameraDisabled(adminComponentName, !enable)
     }
 
     /**
-     * Invoked by clicking on cameraSwitch, activity_main layout
+     * Invoked by clicking on camera_button in menu
      */
-    fun changeCameraStatus(view: View) {
-        val switch = view as Switch
-        val cameraEnable = switch.isChecked
-        switch.isChecked = !cameraEnable
-
-        checkPassword(cameraEnable)
-    }
-
-    private fun adjustLayout() {
-        if (devicePolicyManager.getCameraDisabled(adminComponentName)) {
-            cameraImage.setImageResource(R.drawable.ic_cam_disable)
-            cameraSwitch.isChecked = false
-        } else {
-            cameraImage.setImageResource(R.drawable.ic_cam_enable)
-            cameraSwitch.isChecked = true
-        }
+    private fun changeCameraStatus() {
+        val enableCamera = isCameraDisabled(this)
+        checkPassword(enableCamera)
     }
 
     private fun askAdminRight() {
