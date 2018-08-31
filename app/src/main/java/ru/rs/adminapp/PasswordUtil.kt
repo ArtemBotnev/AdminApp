@@ -13,9 +13,6 @@ import java.security.MessageDigest
 const val PASSWORD = "password_shed"
 const val PASSWORD_DEFAULT_VAL = ""
 
-fun showLongToast(context: Context, sourceId: Int) =
-        Toast.makeText(context, sourceId, Toast.LENGTH_LONG).show()
-
 /**
  * encrypts input string according sha-256
  *

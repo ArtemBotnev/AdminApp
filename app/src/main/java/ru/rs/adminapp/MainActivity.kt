@@ -1,20 +1,24 @@
 package ru.rs.adminapp
 
+import android.Manifest.*
 import android.app.Activity
 import android.app.admin.DevicePolicyManager
 import android.app.admin.DevicePolicyManager.*
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.preference.PreferenceManager
+import android.support.v4.app.ActivityCompat
+import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.GridLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.view.*
 import android.widget.GridLayout
 import android.widget.ImageButton
-import android.widget.Toast
 
 import kotlinx.android.synthetic.main.activity_main.recycler
 
@@ -26,6 +30,8 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
         private const val TAG = "MainActivity"
         //span count for grid layout manager
         private const val SPAN_COUNT = 3
+
+        private const val REQUEST_PERMISSIONS_CODE = 174
 
         fun launch(context: Context) =
                 Intent(context, MainActivity::class.java)
@@ -71,6 +77,20 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
         }
     }
 
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>,
+                                            grantResults: IntArray) {
+        when (requestCode) {
+            REQUEST_PERMISSIONS_CODE -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    //TODO: invoke camera capture
+                } else {
+                    showLongToast(this, R.string.camera_permission_not_granted)
+                }
+            }
+        }
+
+    }
+
     override fun doChange(enable: Boolean) {
         cameraButton.setIcon(
                 if (enable) R.drawable.ic_cam_enable else R.drawable.ic_cam_disable)
@@ -112,6 +132,23 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
         adapter = PhotoAdapter()
     }
 
+    private fun checkPermissionAndCapturePhoto() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
+
+        if (ContextCompat.checkSelfPermission(this, permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                            permission.CAMERA)) {
+                showLongToast(this, R.string.camera_permission_explanation)
+            }
+
+            ActivityCompat.requestPermissions(this,
+                    arrayOf(permission.CAMERA), REQUEST_PERMISSIONS_CODE)
+        } else {
+            //TODO: invoke camera capture
+        }
+    }
+
     /**
      * Inner classes for recycler
      */
@@ -125,7 +162,7 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
         }
 
         override fun onClick(view: View?) {
-            Toast.makeText(this@MainActivity, "Hi!", Toast.LENGTH_SHORT).show()
+            checkPermissionAndCapturePhoto()
         }
 
         fun bind() {
