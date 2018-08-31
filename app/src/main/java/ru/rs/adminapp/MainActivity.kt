@@ -9,8 +9,14 @@ import android.content.Intent
 import android.os.Bundle
 import android.preference.PreferenceManager
 import android.support.v7.app.AppCompatActivity
-import android.view.Menu
-import android.view.MenuItem
+import android.support.v7.widget.GridLayoutManager
+import android.support.v7.widget.RecyclerView
+import android.view.*
+import android.widget.GridLayout
+import android.widget.ImageButton
+import android.widget.Toast
+
+import kotlinx.android.synthetic.main.activity_main.recycler
 
 /**
  * Created by Artem Botnev on 08/23/2018
@@ -18,6 +24,8 @@ import android.view.MenuItem
 class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
     companion object {
         private const val TAG = "MainActivity"
+        //span count for grid layout manager
+        private const val SPAN_COUNT = 3
 
         fun launch(context: Context) =
                 Intent(context, MainActivity::class.java)
@@ -36,6 +44,8 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
 
         devicePolicyManager = getSystemService(Activity.DEVICE_POLICY_SERVICE) as DevicePolicyManager
         adminComponentName = AdminReceiver.getComponentName(this)
+
+        adjustRecycler()
 
         val isAdminActive = devicePolicyManager.isAdminActive(adminComponentName)
         if (savedInstanceState == null && !isAdminActive) askAdminRight()
@@ -93,5 +103,46 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
         PasswordDialog(this, attemptEnable)
                 .showPasswordDialog(password == PASSWORD_DEFAULT_VAL)
                 .show()
+    }
+
+    private fun adjustRecycler() = with(recycler) {
+        layoutManager =
+                GridLayoutManager(this@MainActivity, SPAN_COUNT, GridLayout.VERTICAL, false)
+
+        adapter = PhotoAdapter()
+    }
+
+    /**
+     * Inner classes for recycler
+     */
+
+    private inner class PhotoHolder(inflater: LayoutInflater, parent: ViewGroup) :
+            RecyclerView.ViewHolder(inflater.inflate(R.layout.photo_cell, parent, false)),
+            View.OnClickListener {
+
+        init {
+            itemView.findViewById<ImageButton>(R.id.take_photo).setOnClickListener(this)
+        }
+
+        override fun onClick(view: View?) {
+            Toast.makeText(this@MainActivity, "Hi!", Toast.LENGTH_SHORT).show()
+        }
+
+        fun bind() {
+
+        }
+    }
+
+    private inner class PhotoAdapter : RecyclerView.Adapter<PhotoHolder>() {
+        private val size = SPAN_COUNT * (30 + SPAN_COUNT)
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
+                PhotoHolder(layoutInflater, parent)
+
+        override fun onBindViewHolder(holder: PhotoHolder, position: Int) {
+            holder.bind()
+        }
+
+        override fun getItemCount() = size
     }
 }

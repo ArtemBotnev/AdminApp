@@ -6,7 +6,7 @@ import android.widget.Toast
 import java.security.MessageDigest
 
 /**
- * Utils file
+ * Password util file
  *
  * Created by ArtemBotnev on 08/24/2018
  */
