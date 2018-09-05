@@ -3,6 +3,7 @@ package ru.rs.adminapp
 import android.app.Activity
 import android.app.admin.DevicePolicyManager
 import android.content.Context
+import android.graphics.Bitmap
 import android.widget.Toast
 
 /**
@@ -19,4 +20,10 @@ fun isCameraDisabled(context: Context): Boolean {
     val adminComponentName = AdminReceiver.getComponentName(context)
 
     return devicePolicyManager.getCameraDisabled(adminComponentName)
+}
+
+fun cropBitmap(source: Bitmap): Bitmap {
+    val smallSide = with(source) { if (width < height) width else height }
+
+    return Bitmap.createBitmap(source, 0, 0, smallSide, smallSide)
 }

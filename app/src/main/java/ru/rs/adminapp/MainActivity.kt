@@ -8,9 +8,11 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.os.Build
 import android.os.Bundle
 import android.preference.PreferenceManager
+import android.provider.MediaStore
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
@@ -19,6 +21,7 @@ import android.support.v7.widget.RecyclerView
 import android.view.*
 import android.widget.GridLayout
 import android.widget.ImageButton
+import android.widget.ImageView
 
 import kotlinx.android.synthetic.main.activity_main.recycler
 
@@ -32,6 +35,7 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
         private const val SPAN_COUNT = 3
 
         private const val REQUEST_PERMISSIONS_CODE = 174
+        private const val REQUEST_CAMERA_CODE = 175
 
         fun launch(context: Context) =
                 Intent(context, MainActivity::class.java)
@@ -43,6 +47,8 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
     private lateinit var adminComponentName: ComponentName
 
     private lateinit var cameraButton: MenuItem
+
+    private var currentPhotoCellId = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -82,13 +88,26 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
         when (requestCode) {
             REQUEST_PERMISSIONS_CODE -> {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    //TODO: invoke camera capture
+                    capturePhoto()
                 } else {
                     showLongToast(this, R.string.camera_permission_not_granted)
                 }
             }
         }
 
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (resultCode != Activity.RESULT_OK) return
+
+        if (requestCode == REQUEST_CAMERA_CODE && data != null) {
+            val thumbnailPhoto = data.extras.get("data") as Bitmap
+
+            val adapter = recycler.adapter as PhotoAdapter
+            adapter.updateCell(cropBitmap(thumbnailPhoto))
+        }
+
+        super.onActivityResult(requestCode, resultCode, data)
     }
 
     override fun doChange(enable: Boolean) {
@@ -133,7 +152,7 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
     }
 
     private fun checkPermissionAndCapturePhoto() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) capturePhoto()
 
         if (ContextCompat.checkSelfPermission(this, permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -145,7 +164,15 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
             ActivityCompat.requestPermissions(this,
                     arrayOf(permission.CAMERA), REQUEST_PERMISSIONS_CODE)
         } else {
-            //TODO: invoke camera capture
+            capturePhoto()
+        }
+    }
+
+    private fun capturePhoto() {
+        val photoIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+
+        if (photoIntent.resolveActivity(packageManager) != null) {
+            startActivityForResult(photoIntent, REQUEST_CAMERA_CODE)
         }
     }
 
@@ -157,29 +184,39 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
             RecyclerView.ViewHolder(inflater.inflate(R.layout.photo_cell, parent, false)),
             View.OnClickListener {
 
-        init {
-            itemView.findViewById<ImageButton>(R.id.take_photo).setOnClickListener(this)
-        }
+        private var imageButton: ImageButton = itemView.findViewById<ImageButton>(R.id.take_photo)
+                .also { it.setOnClickListener(this) }
 
         override fun onClick(view: View?) {
+            currentPhotoCellId = adapterPosition
+
             checkPermissionAndCapturePhoto()
         }
 
-        fun bind() {
-
+        fun bind(thumbnailPhoto: Bitmap?) {
+            if (thumbnailPhoto != null) {
+                imageButton.scaleType = ImageView.ScaleType.CENTER_CROP
+                imageButton.setImageBitmap(thumbnailPhoto)
+            }
         }
     }
 
     private inner class PhotoAdapter : RecyclerView.Adapter<PhotoHolder>() {
         private val size = SPAN_COUNT * (30 + SPAN_COUNT)
+        private val thumbPhotos: Array<Bitmap?> = Array(size) { null }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
                 PhotoHolder(layoutInflater, parent)
 
         override fun onBindViewHolder(holder: PhotoHolder, position: Int) {
-            holder.bind()
+            holder.bind(thumbPhotos[position])
         }
 
         override fun getItemCount() = size
+
+        fun updateCell(resource: Bitmap) {
+            thumbPhotos[currentPhotoCellId] = resource
+            notifyItemChanged(currentPhotoCellId)
+        }
     }
 }
