@@ -1,16 +1,29 @@
 package ru.rs.adminapp
 
+import android.Manifest.*
 import android.app.Activity
 import android.app.admin.DevicePolicyManager
 import android.app.admin.DevicePolicyManager.*
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.os.Build
 import android.os.Bundle
 import android.preference.PreferenceManager
+import android.provider.MediaStore
+import android.support.v4.app.ActivityCompat
+import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
-import android.view.Menu
-import android.view.MenuItem
+import android.support.v7.widget.GridLayoutManager
+import android.support.v7.widget.RecyclerView
+import android.view.*
+import android.widget.GridLayout
+import android.widget.ImageButton
+import android.widget.ImageView
+
+import kotlinx.android.synthetic.main.activity_main.recycler
 
 /**
  * Created by Artem Botnev on 08/23/2018
@@ -18,6 +31,11 @@ import android.view.MenuItem
 class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
     companion object {
         private const val TAG = "MainActivity"
+        //span count for grid layout manager
+        private const val SPAN_COUNT = 3
+
+        private const val REQUEST_PERMISSIONS_CODE = 174
+        private const val REQUEST_CAMERA_CODE = 175
 
         fun launch(context: Context) =
                 Intent(context, MainActivity::class.java)
@@ -30,12 +48,16 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
 
     private lateinit var cameraButton: MenuItem
 
+    private var currentPhotoCellId = 0
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         devicePolicyManager = getSystemService(Activity.DEVICE_POLICY_SERVICE) as DevicePolicyManager
         adminComponentName = AdminReceiver.getComponentName(this)
+
+        adjustRecycler()
 
         val isAdminActive = devicePolicyManager.isAdminActive(adminComponentName)
         if (savedInstanceState == null && !isAdminActive) askAdminRight()
@@ -59,6 +81,33 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
         } else {
             super.onOptionsItemSelected(item)
         }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>,
+                                            grantResults: IntArray) {
+        when (requestCode) {
+            REQUEST_PERMISSIONS_CODE -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    capturePhoto()
+                } else {
+                    showLongToast(this, R.string.camera_permission_not_granted)
+                }
+            }
+        }
+
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (resultCode != Activity.RESULT_OK) return
+
+        if (requestCode == REQUEST_CAMERA_CODE && data != null) {
+            val thumbnailPhoto = data.extras.get("data") as Bitmap
+
+            val adapter = recycler.adapter as PhotoAdapter
+            adapter.updateCell(cropBitmap(thumbnailPhoto))
+        }
+
+        super.onActivityResult(requestCode, resultCode, data)
     }
 
     override fun doChange(enable: Boolean) {
@@ -93,5 +142,90 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
         PasswordDialog(this, attemptEnable)
                 .showPasswordDialog(password == PASSWORD_DEFAULT_VAL)
                 .show()
+    }
+
+    private fun adjustRecycler() = with(recycler) {
+        layoutManager =
+                GridLayoutManager(this@MainActivity, SPAN_COUNT, GridLayout.VERTICAL, false)
+
+        adapter = PhotoAdapter()
+    }
+
+    private fun checkPermissionAndCapturePhoto() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) capturePhoto()
+
+        if (ContextCompat.checkSelfPermission(this, permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                            permission.CAMERA)) {
+                showLongToast(this, R.string.camera_permission_explanation)
+            }
+
+            ActivityCompat.requestPermissions(this,
+                    arrayOf(permission.CAMERA), REQUEST_PERMISSIONS_CODE)
+        } else {
+            capturePhoto()
+        }
+    }
+
+    private fun capturePhoto() {
+        if (isCameraDisabled(this)) {
+            showLongToast(this, R.string.camera_is_disable_explanation)
+
+            return
+        }
+
+        val photoIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+
+        if (photoIntent.resolveActivity(packageManager) != null) {
+            startActivityForResult(photoIntent, REQUEST_CAMERA_CODE)
+        }
+    }
+
+    /**
+     * Inner classes for recycler
+     */
+
+    private inner class PhotoHolder(inflater: LayoutInflater, parent: ViewGroup) :
+            RecyclerView.ViewHolder(inflater.inflate(R.layout.photo_cell, parent, false)),
+            View.OnClickListener {
+
+        private var imageButton: ImageButton = itemView.findViewById<ImageButton>(R.id.take_photo)
+                .also { it.setOnClickListener(this) }
+
+        override fun onClick(view: View?) {
+            currentPhotoCellId = adapterPosition
+
+            checkPermissionAndCapturePhoto()
+        }
+
+        fun bind(thumbnailPhoto: Bitmap?) {
+            if (thumbnailPhoto != null) {
+                imageButton.scaleType = ImageView.ScaleType.CENTER_CROP
+                imageButton.setImageBitmap(thumbnailPhoto)
+            }
+        }
+    }
+
+    private inner class PhotoAdapter : RecyclerView.Adapter<PhotoHolder>() {
+        private val size = SPAN_COUNT * (30 + SPAN_COUNT)
+        private val thumbPhotos: Array<Bitmap?> = Array(size) { null }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
+                PhotoHolder(layoutInflater, parent)
+
+        override fun onBindViewHolder(holder: PhotoHolder, position: Int) =
+                holder.bind(thumbPhotos[position])
+
+        override fun getItemCount() = size
+
+        override fun getItemId(position: Int) = position.toLong()
+
+        override fun getItemViewType(position: Int) = position
+
+        fun updateCell(resource: Bitmap) {
+            thumbPhotos[currentPhotoCellId] = resource
+            notifyItemChanged(currentPhotoCellId)
+        }
     }
 }
