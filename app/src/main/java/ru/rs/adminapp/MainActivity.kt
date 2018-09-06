@@ -214,6 +214,10 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
 
         override fun getItemCount() = size
 
+        override fun getItemId(position: Int) = position.toLong()
+
+        override fun getItemViewType(position: Int) = position
+
         fun updateCell(resource: Bitmap) {
             thumbPhotos[currentPhotoCellId] = resource
             notifyItemChanged(currentPhotoCellId)
