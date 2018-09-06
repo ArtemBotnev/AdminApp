@@ -9,7 +9,7 @@ import android.widget.Toast
 /**
  * Util file
  *
- * Created by ArtemBotnev on 08/30/2018
+ * Created by Artem Botnev on 08/30/2018
  */
 fun showLongToast(context: Context, sourceId: Int) =
         Toast.makeText(context, sourceId, Toast.LENGTH_LONG).show()

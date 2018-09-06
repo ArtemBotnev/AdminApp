@@ -1,14 +1,11 @@
 package ru.rs.adminapp
 
-import android.content.Context
-import android.widget.Toast
-
 import java.security.MessageDigest
 
 /**
  * Password util file
  *
- * Created by ArtemBotnev on 08/24/2018
+ * Created by Artem Botnev on 08/24/2018
  */
 const val PASSWORD = "password_shed"
 const val PASSWORD_DEFAULT_VAL = ""

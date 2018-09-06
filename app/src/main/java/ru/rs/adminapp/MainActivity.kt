@@ -169,6 +169,12 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
     }
 
     private fun capturePhoto() {
+        if (isCameraDisabled(this)) {
+            showLongToast(this, R.string.camera_is_disable_explanation)
+
+            return
+        }
+
         val photoIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
 
         if (photoIntent.resolveActivity(packageManager) != null) {
@@ -208,9 +214,8 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
                 PhotoHolder(layoutInflater, parent)
 
-        override fun onBindViewHolder(holder: PhotoHolder, position: Int) {
-            holder.bind(thumbPhotos[position])
-        }
+        override fun onBindViewHolder(holder: PhotoHolder, position: Int) =
+                holder.bind(thumbPhotos[position])
 
         override fun getItemCount() = size
 

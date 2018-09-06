@@ -8,7 +8,11 @@
     <string name="explanation">It\'s necessary to have ability to disable device camera</string>
 
     <string name="camera_disable">Disable camera</string>
+    <string name="camera_is_disable_explanation">
+        The camera is disabled according the device policy
+    </string>
 
+    <!--password-->
     <string name="create_password">Create password</string>
     <string name="enter_password">Enter password</string>
     <string name="password">Password</string>
