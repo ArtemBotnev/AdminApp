@@ -26,4 +26,9 @@
     <string name="camera_permission_explanation">It\'s necessary to have ability to use camera</string>
     <string name="camera_permission_not_granted">Camera permission is not granted</string>
 
+    <string name="external_storage_permission_explanation">
+        It\'s necessary to have ability to save photo</string>
+    <string name="external_storage_permission_not_granted">
+        Write to external storage permission is not granted</string>
+
 </resources>
