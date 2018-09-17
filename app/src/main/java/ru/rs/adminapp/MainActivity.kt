@@ -22,6 +22,7 @@ import android.support.v7.widget.RecyclerView
 import android.view.*
 import android.widget.GridLayout
 import android.widget.ImageButton
+import android.widget.ImageView
 
 import com.squareup.picasso.Picasso
 
@@ -56,6 +57,10 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
     private var currentPhotoCellId = 0
 
     private lateinit var imageFileURI: Uri
+
+    // size of imageView each photo sell
+    private var cellWidth = 0
+    private var cellHeight = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -158,11 +163,21 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
                 .show()
     }
 
-    private fun adjustRecycler() = with(recycler) {
+    private fun adjustRecycler() = recycler.run {
         layoutManager =
                 GridLayoutManager(this@MainActivity, SPAN_COUNT, GridLayout.VERTICAL, false)
 
         adapter = PhotoAdapter()
+
+        viewTreeObserver.addOnGlobalLayoutListener { (adapter as PhotoAdapter).fillViews() }
+
+        addOnScrollListener (object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView?, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+
+                (adapter as PhotoAdapter).fillViews()
+            }
+        })
     }
 
     private fun checkPermissionAndCapturePhoto() {
@@ -223,12 +238,15 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
         val adapter = recycler.adapter as PhotoAdapter
         val photoCell = adapter.getHolderImageButton() ?: return
 
-        Picasso.get()
-                .load(imageFileURI)
-                .resize(photoCell.width, photoCell.height)
-                .centerCrop()
-                .into(photoCell)
+        loadPhoto(imageFileURI, photoCell, photoCell.width, photoCell.height)
     }
+
+    private fun loadPhoto(fileUri: Uri, imageView: ImageView, width: Int, height: Int) =
+            Picasso.get()
+                    .load(fileUri)
+                    .resize(width, height)
+                    .centerCrop()
+                    .into(imageView)
 
     /**
      * Inner classes for recycler
@@ -238,9 +256,13 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
             RecyclerView.ViewHolder(inflater.inflate(R.layout.photo_cell, parent, false)),
             View.OnClickListener {
 
-        var imageButton: ImageButton = itemView.findViewById<ImageButton>(R.id.take_photo)
-                .also { it.setOnClickListener(this) }
+        var imageButton: ImageButton
         private set
+
+        init {
+            imageButton = itemView.findViewById<ImageButton>(R.id.take_photo)
+            .also { it.setOnClickListener(this) }
+        }
 
         override fun onClick(view: View?) {
             currentPhotoCellId = adapterPosition
@@ -251,7 +273,7 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
 
     private inner class PhotoAdapter : RecyclerView.Adapter<PhotoHolder>() {
         private val size = SPAN_COUNT * (30 + SPAN_COUNT)
-        private val holdersImageButton: Array<ImageButton?> = Array(size) { null }
+        private val holdersImageButton: Array<ImageView?> = Array(size) { null }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
                 PhotoHolder(layoutInflater, parent)
@@ -260,12 +282,29 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
             holdersImageButton[position] = holder.imageButton
         }
 
-
         override fun getItemCount() = size
 
         override fun getItemId(position: Int) = position.toLong()
 
         override fun getItemViewType(position: Int) = position
+
+        fun fillViews() {
+            if (cellHeight == 0) cellHeight = holdersImageButton[0]?.height ?: 0
+            if (cellWidth == 0) cellWidth = holdersImageButton[0]?.width ?: 0
+
+            holdersImageButton
+                    .filter { it != null }
+                    .filter { it!!.visibility == View.VISIBLE }
+                    .forEachIndexed { i, v ->
+                        val photoFile = getPrivateImageFileIfExist(i)
+                        if (photoFile != null) {
+                            val uri = FileProvider
+                                    .getUriForFile(this@MainActivity, FILE_PROVIDER, photoFile)
+
+                            loadPhoto(uri, v!!, cellWidth, cellHeight)
+                        }
+                    }
+        }
 
         fun getHolderImageButton() = holdersImageButton[currentPhotoCellId]
     }
