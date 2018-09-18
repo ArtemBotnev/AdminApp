@@ -5,6 +5,8 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import ru.rs.adminapp.ui.MainActivity
+import ru.rs.adminapp.utils.showLongToast
 
 /**
  * Created by Artem Botnev on 08/23/2018

@@ -2,6 +2,7 @@ package ru.rs.adminapp
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import ru.rs.adminapp.utils.get256Sha
 
 class UtilTest {
     @Test(timeout = 200)

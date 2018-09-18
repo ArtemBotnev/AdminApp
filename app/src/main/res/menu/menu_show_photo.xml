@@ -2,11 +2,11 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:context=".ui.MainActivity">
+    tools:context=".ui.ShowPhotoActivity">
 
-    <item android:id="@+id/camera_button"
-        android:title="@string/camera_disable"
-        android:icon="@drawable/ic_cam_enable"
+    <item android:id="@+id/delete_button"
+        android:title="@string/delete_image"
+        android:icon="@drawable/ic_delete"
         app:showAsAction="always" />
 
 </menu>

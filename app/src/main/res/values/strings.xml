@@ -12,6 +12,8 @@
         The camera is disabled according the device policy
     </string>
 
+    <string name="delete_image">Delete</string>
+
     <!--password-->
     <string name="create_password">Create password</string>
     <string name="enter_password">Enter password</string>
