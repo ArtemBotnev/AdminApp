@@ -58,10 +58,6 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
 
     private lateinit var imageFileURI: Uri
 
-    // size of imageView each photo sell
-    private var cellWidth = 0
-    private var cellHeight = 0
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -288,22 +284,16 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
 
         override fun getItemViewType(position: Int) = position
 
-        fun fillViews() {
-            if (cellHeight == 0) cellHeight = holdersImageButton[0]?.height ?: 0
-            if (cellWidth == 0) cellWidth = holdersImageButton[0]?.width ?: 0
+        fun fillViews() = holdersImageButton.forEachIndexed { i, v ->
+            if (v != null && v.width > 0) {
+                val photoFile = getPrivateImageFileIfExist(i)
+                if (photoFile != null) {
+                    val uri = FileProvider
+                            .getUriForFile(this@MainActivity, FILE_PROVIDER, photoFile)
 
-            holdersImageButton
-                    .filter { it != null }
-                    .filter { it!!.visibility == View.VISIBLE }
-                    .forEachIndexed { i, v ->
-                        val photoFile = getPrivateImageFileIfExist(i)
-                        if (photoFile != null) {
-                            val uri = FileProvider
-                                    .getUriForFile(this@MainActivity, FILE_PROVIDER, photoFile)
-
-                            loadPhoto(uri, v!!, cellWidth, cellHeight)
-                        }
-                    }
+                    loadPhoto(uri, v, v.width, v.height)
+                }
+            }
         }
 
         fun getHolderImageButton() = holdersImageButton[currentPhotoCellId]
