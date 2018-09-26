@@ -22,11 +22,11 @@ import android.support.v7.widget.RecyclerView
 import android.view.*
 import android.widget.GridLayout
 import android.widget.ImageButton
-import android.widget.ImageView
 
 import com.squareup.picasso.Picasso
 
 import kotlinx.android.synthetic.main.activity_main.*
+
 import ru.rs.adminapp.*
 import ru.rs.adminapp.utils.*
 
@@ -233,17 +233,10 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
 
     private fun loadPhotoToCell() {
         val adapter = recycler.adapter as PhotoAdapter
-        val photoCell = adapter.getHolderImageButton() ?: return
 
-        loadPhoto(imageFileURI, photoCell, photoCell.width, photoCell.height)
+        val holder = adapter.getHolder()
+        holder?.loadPhoto(imageFileURI)
     }
-
-    private fun loadPhoto(fileUri: Uri, imageView: ImageView, width: Int, height: Int) =
-            Picasso.get()
-                    .load(fileUri)
-                    .resize(width, height)
-                    .centerCrop()
-                    .into(imageView)
 
     /**
      * Inner classes for recycler
@@ -254,7 +247,9 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
             View.OnClickListener {
 
         var imageButton: ImageButton
-        private set
+            private set
+
+        private var photoUri: Uri? = null
 
         init {
             imageButton = itemView.findViewById<ImageButton>(R.id.take_photo)
@@ -266,17 +261,27 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
 
             checkPermissionAndCapturePhoto()
         }
+
+        fun loadPhoto(uri: Uri) {
+            photoUri = uri
+
+            Picasso.get()
+                    .load(photoUri)
+                    .resize(imageButton.width, imageButton.height)
+                    .centerCrop()
+                    .into(imageButton)
+        }
     }
 
     private inner class PhotoAdapter : RecyclerView.Adapter<PhotoHolder>() {
         private val size = SPAN_COUNT * (30 + SPAN_COUNT)
-        private val holdersImageButton: Array<ImageView?> = Array(size) { null }
+        private val holders: Array<PhotoHolder?> = Array(size) { null }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
                 PhotoHolder(layoutInflater, parent)
 
         override fun onBindViewHolder(holder: PhotoHolder, position: Int) {
-            holdersImageButton[position] = holder.imageButton
+            holders[position] = holder
         }
 
         override fun getItemCount() = size
@@ -285,18 +290,18 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
 
         override fun getItemViewType(position: Int) = position
 
-        fun fillViews() = holdersImageButton.forEachIndexed { i, v ->
-            if (v != null && v.width > 0) {
+        fun fillViews() = holders.forEachIndexed { i, v ->
+            if (v != null && v.imageButton.width > 0) {
                 val photoFile = getImageFileIfExist(i)
                 if (photoFile != null) {
                     val uri = FileProvider
                             .getUriForFile(this@MainActivity, FILE_PROVIDER, photoFile)
 
-                    loadPhoto(uri, v, v.width, v.height)
+                    v.loadPhoto(uri)
                 }
             }
         }
 
-        fun getHolderImageButton() = holdersImageButton[currentPhotoCellId]
+        fun getHolder() = holders[currentPhotoCellId]
     }
 }

@@ -10,6 +10,7 @@ import android.view.Menu
 import android.view.MenuItem
 
 import com.squareup.picasso.Picasso
+
 import kotlinx.android.synthetic.main.activity_show_photo.*
 
 import ru.rs.adminapp.R
