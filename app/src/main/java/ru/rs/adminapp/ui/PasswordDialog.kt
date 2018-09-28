@@ -8,6 +8,7 @@ import android.support.v7.app.AlertDialog
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.EditText
+
 import ru.rs.adminapp.*
 import ru.rs.adminapp.utils.PASSWORD
 import ru.rs.adminapp.utils.PASSWORD_DEFAULT_VAL

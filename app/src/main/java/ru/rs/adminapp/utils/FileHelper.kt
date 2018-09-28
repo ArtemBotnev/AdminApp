@@ -1,23 +1,28 @@
 package ru.rs.adminapp.utils
 
 import android.os.Environment
+
 import java.io.File
 
+/**
+ * Created by Artem Botnev on 09/02/2018
+ */
 const val FILE_PROVIDER = "ru.rs.adminapp.fileprovider"
 
-fun createImageFile(number: Int): File {
-    val fileName = "JPEG_$number.jpg"
-
-    val dir = Environment.getExternalStorageDirectory()
-
-    return File(File(dir, "Pictures"), fileName)
-}
+fun createImageFile(number: Int) =
+        File(File(getDir(), "Pictures"), getFileName(number))
 
 fun getImageFileIfExist(number: Int): File? {
-    val fileName = "JPEG_$number.jpg"
-
-    val dir = Environment.getExternalStorageDirectory()
-    val file = File(File(dir, "Pictures"), fileName)
+    val file = File(File(getDir(), "Pictures"), getFileName(number))
 
     return if (file.exists()) file else null
 }
+
+fun deleteFile(number: Int) {
+    val file = File(File(getDir(), "Pictures"), getFileName(number))
+    file.delete()
+}
+
+private fun getFileName(number: Int) = "JPEG_$number.jpg"
+
+private fun getDir() = Environment.getExternalStorageDirectory()

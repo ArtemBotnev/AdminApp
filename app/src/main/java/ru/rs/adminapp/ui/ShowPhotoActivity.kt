@@ -1,10 +1,11 @@
 package ru.rs.adminapp.ui
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
-import android.support.v4.content.FileProvider
 import android.support.v7.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
@@ -14,50 +15,34 @@ import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.activity_show_photo.*
 
 import ru.rs.adminapp.R
-import ru.rs.adminapp.utils.FILE_PROVIDER
-import ru.rs.adminapp.utils.getImageFileIfExist
 
+/**
+ * Created by Artem Botnev on 09/02/2018
+ */
 class ShowPhotoActivity : AppCompatActivity() {
     companion object {
-        const val IMAGE_ID = "image_id"
-        const val IMAGE_DELETED = 1
+        private const val PHOTO_URI = "ShowPhotoActivity.PhotoUri"
 
-        fun createIntent(context: Context, cellId: Int) =
+        fun createIntent(context: Context, photoUri: Uri) =
                 Intent(context, ShowPhotoActivity::class.java)
-                        .apply { putExtra(IMAGE_ID, cellId) }
+                        .apply { putExtra(PHOTO_URI, photoUri) }
     }
 
-    private var imageId = 0
+    private var imageUri: Uri? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_show_photo)
 
-        imageId = savedInstanceState?.getInt(IMAGE_ID, 0) ?:
-                intent.getIntExtra(IMAGE_ID, 0)
+        photoImage.viewTreeObserver.addOnGlobalLayoutListener { loadImage() }
+
+        imageUri = savedInstanceState?.getParcelable(PHOTO_URI) ?:
+                intent.getParcelableExtra(PHOTO_URI)
     }
 
-    override fun onStart() {
-        super.onStart()
-
-        val file = getImageFileIfExist(imageId)
-        if (file == null) {
-            finish()
-            return
-        }
-
-        val uri = FileProvider.getUriForFile(this, FILE_PROVIDER, file)
-
-        Picasso.get()
-                .load(uri)
-                .resize(photoImage.width, photoImage.height)
-                .centerCrop()
-                .into(photoImage)
-    }
-
+    @SuppressLint("MissingSuperCall")
     override fun onSaveInstanceState(outState: Bundle?) {
-        outState?.putInt(IMAGE_ID, imageId)
-        super.onSaveInstanceState(outState)
+        outState?.putParcelable(PHOTO_URI, imageUri)
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -69,10 +54,7 @@ class ShowPhotoActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return if (item.itemId == R.id.delete_button) {
-
-            Intent().apply { putExtra("result", IMAGE_DELETED) }
-                    .also { setResult(Activity.RESULT_OK, it) }
-
+            setResult(Activity.RESULT_OK)
             finish()
 
             true
@@ -80,5 +62,12 @@ class ShowPhotoActivity : AppCompatActivity() {
             super.onOptionsItemSelected(item)
         }
     }
+
+    private fun loadImage() =
+            Picasso.get()
+                    .load(imageUri)
+                    .resize(photoImage.width, photoImage.height)
+                    .centerInside()
+                    .into(photoImage)
 
 }

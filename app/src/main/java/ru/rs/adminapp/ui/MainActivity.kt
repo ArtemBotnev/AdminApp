@@ -1,6 +1,7 @@
 package ru.rs.adminapp.ui
 
 import android.Manifest.*
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.admin.DevicePolicyManager
 import android.app.admin.DevicePolicyManager.*
@@ -37,7 +38,10 @@ import java.io.IOException
  */
 class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
     companion object {
+        const val DELETE_PHOTO_CODE = 176
+
         private const val TAG = "MainActivity"
+        private const val PHOTO_CELL_ID = "MainActivity.photoCellId"
         //span count for grid layout manager
         private const val SPAN_COUNT = 3
 
@@ -55,13 +59,15 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
 
     private lateinit var cameraButton: MenuItem
 
-    private var currentPhotoCellId = 0
-
     private lateinit var imageFileURI: Uri
+
+    private var currentPhotoCellId = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        currentPhotoCellId = savedInstanceState?.getInt(PHOTO_CELL_ID, 0) ?: 0
 
         devicePolicyManager = getSystemService(Activity.DEVICE_POLICY_SERVICE) as DevicePolicyManager
         adminComponentName = AdminReceiver.getComponentName(this)
@@ -70,6 +76,11 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
 
         val isAdminActive = devicePolicyManager.isAdminActive(adminComponentName)
         if (savedInstanceState == null && !isAdminActive) askAdminRight()
+    }
+
+    @SuppressLint("MissingSuperCall")
+    override fun onSaveInstanceState(outState: Bundle?) {
+        outState?.putInt(PHOTO_CELL_ID, currentPhotoCellId)
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -121,7 +132,10 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         if (resultCode != Activity.RESULT_OK) return
 
-        loadPhotoToCell()
+        when(requestCode) {
+            REQUEST_CAMERA_CODE -> loadPhotoToCell()
+            DELETE_PHOTO_CODE -> (recycler.adapter as PhotoAdapter).getHolder()?.deletePhoto()
+        }
 
         super.onActivityResult(requestCode, resultCode, data)
     }
@@ -169,7 +183,7 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
         viewTreeObserver.addOnGlobalLayoutListener { (adapter as PhotoAdapter).fillViews() }
 
         addOnScrollListener (object : RecyclerView.OnScrollListener() {
-            override fun onScrolled(recyclerView: RecyclerView?, dx: Int, dy: Int) {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 super.onScrolled(recyclerView, dx, dy)
 
                 (adapter as PhotoAdapter).fillViews()
@@ -259,7 +273,10 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
         override fun onClick(view: View?) {
             currentPhotoCellId = adapterPosition
 
-            checkPermissionAndCapturePhoto()
+            photoUri?.let {
+                val intent = ShowPhotoActivity.createIntent(this@MainActivity, it)
+                startActivityForResult(intent, DELETE_PHOTO_CODE)
+            } ?: checkPermissionAndCapturePhoto()
         }
 
         fun loadPhoto(uri: Uri) {
@@ -270,6 +287,17 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
                     .resize(imageButton.width, imageButton.height)
                     .centerCrop()
                     .into(imageButton)
+        }
+
+        fun deletePhoto() {
+            if (photoUri == null) return
+
+            deleteFile(adapterPosition)
+            photoUri = null
+
+            imageButton.setImageDrawable(getDrawable(R.drawable.ic_take_photo))
+
+            recycler.adapter?.notifyItemChanged(adapterPosition)
         }
     }
 
