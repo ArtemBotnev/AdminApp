@@ -24,8 +24,9 @@ class ShowPhotoActivity : AppCompatActivity() {
         private const val PHOTO_URI = "ShowPhotoActivity.PhotoUri"
 
         fun createIntent(context: Context, photoUri: Uri) =
-                Intent(context, ShowPhotoActivity::class.java)
-                        .apply { putExtra(PHOTO_URI, photoUri) }
+                Intent(context, ShowPhotoActivity::class.java).apply {
+                    putExtra(PHOTO_URI, photoUri)
+                }
     }
 
     private var imageUri: Uri? = null

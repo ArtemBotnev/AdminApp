@@ -22,13 +22,11 @@ import android.support.v7.widget.GridLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.view.*
 import android.widget.GridLayout
-import android.widget.ImageButton
-
-import com.squareup.picasso.Picasso
 
 import kotlinx.android.synthetic.main.activity_main.*
 
 import ru.rs.adminapp.*
+import ru.rs.adminapp.ui.PhotoAdapter.Companion.SPAN_COUNT
 import ru.rs.adminapp.utils.*
 
 import java.io.IOException
@@ -36,14 +34,14 @@ import java.io.IOException
 /**
  * Created by Artem Botnev on 08/23/2018
  */
-class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
+class MainActivity : AppCompatActivity(),
+        PasswordDialog.Resolvable, PhotoAdapter.PhotoActionListener {
+
     companion object {
         const val DELETE_PHOTO_CODE = 176
 
         private const val TAG = "MainActivity"
         private const val PHOTO_CELL_ID = "MainActivity.photoCellId"
-        //span count for grid layout manager
-        private const val SPAN_COUNT = 3
 
         private const val REQUEST_PERMISSIONS_CODE = 174
         private const val REQUEST_CAMERA_CODE = 175
@@ -59,7 +57,7 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
 
     private lateinit var cameraButton: MenuItem
 
-    private lateinit var imageFileURI: Uri
+    private var imageFileURI: Uri? = null
 
     private var currentPhotoCellId = 0
 
@@ -134,7 +132,7 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
 
         when(requestCode) {
             REQUEST_CAMERA_CODE -> loadPhotoToCell()
-            DELETE_PHOTO_CODE -> (recycler.adapter as PhotoAdapter).getHolder()?.deletePhoto()
+            DELETE_PHOTO_CODE -> (recycler.adapter as PhotoAdapter).deletePhoto(currentPhotoCellId)
         }
 
         super.onActivityResult(requestCode, resultCode, data)
@@ -145,6 +143,19 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
                 if (enable) R.drawable.ic_cam_enable else R.drawable.ic_cam_disable)
 
         devicePolicyManager.setCameraDisabled(adminComponentName, !enable)
+    }
+
+    override fun clickOnItemWithPosition(position: Int) {
+        currentPhotoCellId = position
+
+        imageFileURI = getImageFileIfExist(position)?.let {
+            FileProvider.getUriForFile(this, FILE_PROVIDER, it)
+        }
+
+        imageFileURI?.let {
+            val intent = ShowPhotoActivity.createIntent(this, it)
+            startActivityForResult(intent, MainActivity.DELETE_PHOTO_CODE)
+        } ?: checkPermissionAndCapturePhoto()
     }
 
     /**
@@ -178,17 +189,7 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
         layoutManager =
                 GridLayoutManager(this@MainActivity, SPAN_COUNT, GridLayout.VERTICAL, false)
 
-        adapter = PhotoAdapter()
-
-        viewTreeObserver.addOnGlobalLayoutListener { (adapter as PhotoAdapter).fillViews() }
-
-        addOnScrollListener (object : RecyclerView.OnScrollListener() {
-            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                super.onScrolled(recyclerView, dx, dy)
-
-                (adapter as PhotoAdapter).fillViews()
-            }
-        })
+        adapter = PhotoAdapter(this@MainActivity)
     }
 
     private fun checkPermissionAndCapturePhoto() {
@@ -246,90 +247,8 @@ class MainActivity : AppCompatActivity(), PasswordDialog.Resolvable {
     }
 
     private fun loadPhotoToCell() {
-        val adapter = recycler.adapter as PhotoAdapter
-
-        val holder = adapter.getHolder()
-        holder?.loadPhoto(imageFileURI)
-    }
-
-    /**
-     * Inner classes for recycler
-     */
-
-    private inner class PhotoHolder(inflater: LayoutInflater, parent: ViewGroup) :
-            RecyclerView.ViewHolder(inflater.inflate(R.layout.photo_cell, parent, false)),
-            View.OnClickListener {
-
-        var imageButton: ImageButton
-            private set
-
-        private var photoUri: Uri? = null
-
-        init {
-            imageButton = itemView.findViewById<ImageButton>(R.id.take_photo)
-            .also { it.setOnClickListener(this) }
+        imageFileURI?.let {
+            (recycler.adapter as PhotoAdapter).addPhoto(currentPhotoCellId, it)
         }
-
-        override fun onClick(view: View?) {
-            currentPhotoCellId = adapterPosition
-
-            photoUri?.let {
-                val intent = ShowPhotoActivity.createIntent(this@MainActivity, it)
-                startActivityForResult(intent, DELETE_PHOTO_CODE)
-            } ?: checkPermissionAndCapturePhoto()
-        }
-
-        fun loadPhoto(uri: Uri) {
-            photoUri = uri
-
-            Picasso.get()
-                    .load(photoUri)
-                    .resize(imageButton.width, imageButton.height)
-                    .centerCrop()
-                    .into(imageButton)
-        }
-
-        fun deletePhoto() {
-            if (photoUri == null) return
-
-            deleteFile(adapterPosition)
-            photoUri = null
-
-            imageButton.setImageDrawable(getDrawable(R.drawable.ic_take_photo))
-
-            recycler.adapter?.notifyItemChanged(adapterPosition)
-        }
-    }
-
-    private inner class PhotoAdapter : RecyclerView.Adapter<PhotoHolder>() {
-        private val size = SPAN_COUNT * (30 + SPAN_COUNT)
-        private val holders: Array<PhotoHolder?> = Array(size) { null }
-
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
-                PhotoHolder(layoutInflater, parent)
-
-        override fun onBindViewHolder(holder: PhotoHolder, position: Int) {
-            holders[position] = holder
-        }
-
-        override fun getItemCount() = size
-
-        override fun getItemId(position: Int) = position.toLong()
-
-        override fun getItemViewType(position: Int) = position
-
-        fun fillViews() = holders.forEachIndexed { i, v ->
-            if (v != null && v.imageButton.width > 0) {
-                val photoFile = getImageFileIfExist(i)
-                if (photoFile != null) {
-                    val uri = FileProvider
-                            .getUriForFile(this@MainActivity, FILE_PROVIDER, photoFile)
-
-                    v.loadPhoto(uri)
-                }
-            }
-        }
-
-        fun getHolder() = holders[currentPhotoCellId]
     }
 }
