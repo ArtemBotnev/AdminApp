@@ -19,7 +19,6 @@ import android.support.v4.content.ContextCompat
 import android.support.v4.content.FileProvider
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.GridLayoutManager
-import android.support.v7.widget.RecyclerView
 import android.view.*
 import android.widget.GridLayout
 
@@ -132,7 +131,7 @@ class MainActivity : AppCompatActivity(),
 
         when(requestCode) {
             REQUEST_CAMERA_CODE -> loadPhotoToCell()
-            DELETE_PHOTO_CODE -> (recycler.adapter as PhotoAdapter).deletePhoto(currentPhotoCellId)
+            DELETE_PHOTO_CODE -> deletePhoto()
         }
 
         super.onActivityResult(requestCode, resultCode, data)
@@ -250,5 +249,10 @@ class MainActivity : AppCompatActivity(),
         imageFileURI?.let {
             (recycler.adapter as PhotoAdapter).addPhoto(currentPhotoCellId, it)
         }
+    }
+
+    private fun deletePhoto() {
+        deleteFile(currentPhotoCellId)
+        (recycler.adapter as PhotoAdapter).deletePhoto(currentPhotoCellId)
     }
 }

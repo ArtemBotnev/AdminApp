@@ -11,9 +11,11 @@ import android.widget.ImageButton
 import com.squareup.picasso.Picasso
 import ru.rs.adminapp.R
 import ru.rs.adminapp.utils.FILE_PROVIDER
-import ru.rs.adminapp.utils.deleteFile
 import ru.rs.adminapp.utils.getImageFileIfExist
 
+/**
+ * Created by Artem Botnev on 02/2019
+ */
 class PhotoAdapter(val listener: PhotoActionListener)
     : RecyclerView.Adapter<PhotoAdapter.PhotoHolder>() {
 
@@ -33,21 +35,21 @@ class PhotoAdapter(val listener: PhotoActionListener)
             PhotoHolder(LayoutInflater.from(parent.context), parent)
 
     override fun onBindViewHolder(holder: PhotoHolder, position: Int) {
-//        holders[position] = holder
+        holder.loadPhoto()
     }
 
     override fun getItemCount() = size
 
     override fun getItemId(position: Int) = position.toLong()
 
-//    override fun getItemViewType(position: Int) = position
-
     fun addPhoto(position: Int, uri: Uri) {
         Log.i(TAG, "Added photo with position: $position, uri: $uri")
+        notifyItemChanged(position)
     }
 
     fun deletePhoto(position: Int) {
         Log.i(TAG, "deleted photo with position: $position")
+        notifyItemChanged(position)
     }
 
 
@@ -58,23 +60,24 @@ class PhotoAdapter(val listener: PhotoActionListener)
             RecyclerView.ViewHolder(inflater.inflate(R.layout.photo_cell, parent, false)),
             View.OnClickListener {
 
-        var imageButton: ImageButton
-            private set
+        private val imageButton: ImageButton = itemView
+                .findViewById<ImageButton>(R.id.take_photo).also { it.setOnClickListener(this) }
 
-        private var photoUri: Uri? = null
-
-        init {
-            imageButton = itemView.findViewById<ImageButton>(R.id.take_photo)
-                    .also { it.setOnClickListener(this) }
-
-            loadPhoto()
-        }
+        private var imageHeight = 0
+        private var imageWight = 0
 
         override fun onClick(view: View?) {
             listener.clickOnItemWithPosition(adapterPosition)
         }
 
-        private fun loadPhoto() {
+        init {
+            // get size of image view
+            imageButton.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
+            imageHeight = imageButton.measuredHeight
+            imageWight = imageButton.measuredWidth
+        }
+
+        fun loadPhoto() {
             val photoFile = getImageFileIfExist(adapterPosition)
 
             photoFile?.let {
@@ -82,31 +85,11 @@ class PhotoAdapter(val listener: PhotoActionListener)
 
                 Picasso.get()
                         .load(uri)
-                        .resize(imageButton.width, imageButton.height)
+                        .resize(imageWight, imageHeight)
                         .centerCrop()
                         .into(imageButton)
-            }
-        }
 
-//        fun loadPhoto(uri: Uri) {
-//            photoUri = uri
-//
-//            Picasso.get()
-//                    .load(photoUri)
-//                    .resize(imageButton.width, imageButton.height)
-//                    .centerCrop()
-//                    .into(imageButton)
-//        }
-
-        fun deletePhoto() {
-            if (photoUri == null) return
-
-            deleteFile(adapterPosition)
-            photoUri = null
-
-            imageButton.setImageDrawable(parent.context.getDrawable(R.drawable.ic_take_photo))
-
-            notifyItemChanged(adapterPosition)
+            } ?: imageButton.setImageDrawable(parent.context.getDrawable(R.drawable.ic_take_photo))
         }
     }
 
