@@ -21,6 +21,7 @@ import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.GridLayoutManager
 import android.view.*
 import android.widget.GridLayout
+import com.squareup.picasso.Picasso
 
 import kotlinx.android.synthetic.main.activity_main.*
 

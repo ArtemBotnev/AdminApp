@@ -9,6 +9,8 @@ import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
+import android.view.ViewTreeObserver
+import com.squareup.picasso.MemoryPolicy
 
 import com.squareup.picasso.Picasso
 
@@ -35,7 +37,23 @@ class ShowPhotoActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_show_photo)
 
-        photoImage.viewTreeObserver.addOnGlobalLayoutListener { loadImage() }
+        // wait until view will be drawn
+        val preDrawListener = object : ViewTreeObserver.OnPreDrawListener {
+            override fun onPreDraw(): Boolean {
+                photoImage.viewTreeObserver.removeOnPreDrawListener(this)
+
+                Picasso.get()
+                        .load(imageUri)
+                        .resize(photoImage.width, photoImage.height)
+                        .centerInside()
+                        .memoryPolicy(MemoryPolicy.NO_CACHE, MemoryPolicy.NO_STORE)
+                        .into(photoImage)
+
+                return true
+            }
+        }
+
+        photoImage.viewTreeObserver.addOnPreDrawListener(preDrawListener)
 
         imageUri = savedInstanceState?.getParcelable(PHOTO_URI) ?:
                 intent.getParcelableExtra(PHOTO_URI)
@@ -63,12 +81,5 @@ class ShowPhotoActivity : AppCompatActivity() {
             super.onOptionsItemSelected(item)
         }
     }
-
-    private fun loadImage() =
-            Picasso.get()
-                    .load(imageUri)
-                    .resize(photoImage.width, photoImage.height)
-                    .centerInside()
-                    .into(photoImage)
 
 }

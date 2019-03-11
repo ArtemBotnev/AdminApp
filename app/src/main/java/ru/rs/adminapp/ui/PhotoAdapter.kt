@@ -7,7 +7,9 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
 import android.widget.ImageButton
+import com.squareup.picasso.MemoryPolicy
 import com.squareup.picasso.Picasso
 import ru.rs.adminapp.R
 import ru.rs.adminapp.utils.FILE_PROVIDER
@@ -63,18 +65,8 @@ class PhotoAdapter(val listener: PhotoActionListener)
         private val imageButton: ImageButton = itemView
                 .findViewById<ImageButton>(R.id.take_photo).also { it.setOnClickListener(this) }
 
-        private var imageHeight = 0
-        private var imageWight = 0
-
         override fun onClick(view: View?) {
             listener.clickOnItemWithPosition(adapterPosition)
-        }
-
-        init {
-            // get size of image view
-            imageButton.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
-            imageHeight = imageButton.measuredHeight
-            imageWight = imageButton.measuredWidth
         }
 
         fun loadPhoto() {
@@ -83,17 +75,35 @@ class PhotoAdapter(val listener: PhotoActionListener)
             photoFile?.let {
                 val uri = FileProvider.getUriForFile(parent.context, FILE_PROVIDER, it)
 
-                Picasso.get()
-                        .load(uri)
-                        .resize(imageWight, imageHeight)
-                        .centerCrop()
-                        .into(imageButton)
+                // wait until view will be drawn
+                val preDrawListener = object : ViewTreeObserver.OnPreDrawListener {
+                    override fun onPreDraw(): Boolean {
+                        imageButton.viewTreeObserver.removeOnPreDrawListener(this)
+
+                        Picasso.get()
+                                .load(uri)
+                                .resize(imageButton.width, imageButton.height)
+                                .centerCrop()
+                                .memoryPolicy(MemoryPolicy.NO_CACHE, MemoryPolicy.NO_STORE)
+                                .into(imageButton)
+
+                        return true
+                    }
+                }
+
+                imageButton.viewTreeObserver.addOnPreDrawListener(preDrawListener)
 
             } ?: imageButton.setImageDrawable(parent.context.getDrawable(R.drawable.ic_take_photo))
         }
     }
 
     interface PhotoActionListener {
+
+        /**
+         * responds to a click on the appropriate position
+         *
+         * @param position - of view holder which was clicked
+         */
         fun clickOnItemWithPosition(position: Int)
     }
 }
